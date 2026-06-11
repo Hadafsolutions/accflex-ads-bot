@@ -160,8 +160,8 @@ def set_adgroup_status(adgroup_id, status="ENABLED"):
     ag.resource_name = service.ad_group_path(CUSTOMER_ID, adgroup_id)
     ag.status = client.enums.AdGroupStatusEnum[status]
 
-    fm = client.get_type("FieldMask")
-    fm.paths.append("status")
+    from google.protobuf import field_mask_pb2
+    fm = field_mask_pb2.FieldMask(paths=["status"])
     op.update_mask.CopyFrom(fm)
 
     response = service.mutate_ad_groups(customer_id=CUSTOMER_ID, operations=[op])
