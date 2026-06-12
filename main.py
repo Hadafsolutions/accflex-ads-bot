@@ -209,10 +209,13 @@ def daily_report():
         campaigns = get_campaign_performance(days=1)
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-        total_cost = sum(c["cost"] for c in campaigns)
-        total_clicks = sum(c["clicks"] for c in campaigns)
-        total_conv = sum(c["conversions"] for c in campaigns)
-        total_impr = sum(c["impressions"] for c in campaigns)
+        # Filter enabled campaigns only
+        enabled = [c for c in campaigns if c["status"] == "ENABLED"]
+
+        total_cost = sum(c["cost"] for c in enabled)
+        total_clicks = sum(c["clicks"] for c in enabled)
+        total_conv = sum(c["conversions"] for c in enabled)
+        total_impr = sum(c["impressions"] for c in enabled)
 
         lines = [f"**Daily Report — {yesterday}**\n"]
         lines.append(f"Total Spend: **{total_cost:,.0f} EGP**")
@@ -221,20 +224,19 @@ def daily_report():
         lines.append(f"Conversions: **{total_conv:.0f}**")
         if total_conv > 0:
             lines.append(f"CPA: **{total_cost/total_conv:,.0f} EGP**")
-        lines.append("\n**Campaigns:**")
+        lines.append(f"\n**Active Campaigns ({len(enabled)}):**")
 
-        for c in campaigns:
-            status_emoji = "ON" if c["status"] == "ENABLED" else "OFF"
+        for c in enabled:
             conv_str = f"Conv: {c['conversions']:.0f}" if c["conversions"] > 0 else "0 conv"
-            lines.append(f"[{status_emoji}] **{c['name']}** — {c['cost']:,.0f} EGP | {c['clicks']} clicks | {conv_str}")
+            lines.append(f"🟢 **{c['name']}** — {c['cost']:,.0f} EGP | {c['clicks']} clicks | {conv_str}")
 
-        # Alerts
+        # Alerts — enabled only
         alerts = []
-        for c in campaigns:
+        for c in enabled:
             if c["cost"] > 1000 and c["conversions"] == 0:
-                alerts.append(f"ALERT: **{c['name']}** spent {c['cost']:,.0f} EGP with 0 conversions!")
+                alerts.append(f"🚨 **{c['name']}** spent {c['cost']:,.0f} EGP with 0 conversions!")
             if c["ctr"] < 1.0 and c["impressions"] > 100:
-                alerts.append(f"WARNING: **{c['name']}** CTR very low: {c['ctr']}%")
+                alerts.append(f"⚠️ **{c['name']}** CTR very low: {c['ctr']}%")
 
         if alerts:
             lines.append("\n**Alerts:**")
